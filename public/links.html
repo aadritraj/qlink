@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qlink - Links</title>
+</head>
+<body>
+    <h1>Qlink</h1>
+    <p>Active links</p>
+
+    <h2>All active links</h2>
+
+    <ul id="link-list">
+        <li><p>Fetching links...</p></li>
+    </ul>
+</body>
+<script>
+    const fetchLinks = async () => {
+        try {
+            const request = await fetch("/api/links");
+
+            if (!request.ok) throw new Error("Failed to fetch links", request.status);
+
+            return request.json();
+        } catch {
+            return {};
+        }
+    }
+
+    const renderLinks = async () => {
+        const linkList = document.getElementById("link-list");
+        const linkData = await fetchLinks();
+
+        linkList.innerHTML = "";
+        
+        if (Array.isArray(linkData) && linkData.length > 0) {
+            linkData.forEach(link => {
+                const listItem = document.createElement("li");
+                const itemContainer = document.createElement("span");
+                const shortCodeElement = document.createElement("p");
+                const originalUrlElement = document.createElement("a");
+
+                originalUrlElement.href = link.original_url;
+                originalUrlElement.textContent = link.original_url;
+                originalUrlElement.target = '_blank';
+                originalUrlElement.rel = 'noopener noreferrer';
+
+                shortCodeElement.textContent = `Shortcode ${link.short_code}`;
+
+                itemContainer.appendChild(originalUrlElement);
+                itemContainer.appendChild(shortCodeElement);
+
+                listItem.appendChild(itemContainer);
+
+                linkList.append(listItem);
+            })
+        } else {
+            linkList.innerHTML = "<li><p>No links found</p></li>";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", renderLinks);
+</script>
+</html>

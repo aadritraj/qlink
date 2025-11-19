@@ -88,6 +88,7 @@ const app = new Elysia()
 	)
 
 	.get("/", () => Bun.file("./public/index.html"))
+	.get("/links", () => Bun.file("./public/links.html"))
 	.get("/l/:shortCode", ({ params, set, redirect }) => {
 		const { shortCode } = params;
 		const query = db.prepare(
