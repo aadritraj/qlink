@@ -3,8 +3,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Qlink</title>
+    <link rel="stylesheet" href="public/style.css">
 </head>
 <body>
-    <h1>TBD</h1>
+    <h1>Qlink</h1>
+    <p>
+        <a href="/links">Links</a>
+    </p>
+    <p>Create a link</p>
+
+    <form id="link-form">
+        <input type="url" id="url-input" name="url" placeholder="https://example.com" required>
+        <button type="submit">Create</button>
+    </form>
+
+    <div id="feedback-container" class="hidden">
+        <p>Created your short link at:</p>
+
+        <div class="result-display">
+            <a id="short-link-display" target="_blank" rel="noopener noreferrer"></a>
+            <button type="button" id="copy-button">Copy</button>
+        </div>
+    </div>
+
+    <p id="error-message"></p>
 </body>
+<script>
+    const linkForm = document.getElementById("link-form");
+    const feedbackContainer = document.getElementById("feedback-container");
+
+    const copyButton = document.getElementById("copy-button");
+    const errorMessage = document.getElementById("error-message");
+    const shortlinkDisplay = document.getElementById("short-link-display");
+
+    const baseURL = window.location.origin;
+
+    linkForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const data = new FormData(linkForm);
+
+        try {
+            const response = await fetch("/api/links", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ url: data.get("url") })
+            });
+
+            if (!response.ok) {
+                throw new Error("HTTP Error:", response.status)
+            };
+
+            const result = await response.json();
+
+            const resultantLink = `${baseURL}/l/${result.short_url}`
+
+            shortlinkDisplay.href = resultantLink;
+            shortlinkDisplay.textContent = resultantLink;
+            copyButton.dataset.copyText = resultantLink;
+
+            feedbackContainer.classList.remove("hidden");
+
+            linkForm.reset();
+        } catch(e) {
+            console.error("Submission failed", e);
+            errorMessage.textContent = "Failed to create short link. Revalidate data and try again.";
+        }
+    })
+
+    copyButton.addEventListener("click", () => {
+        const textToCopy = copyButton.dataset.copyText;
+
+        if (!textToCopy) return;
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            copyButton.textContent = 'Copied!';
+    
+            setTimeout(() => {
+            copyButton.textContent = 'Copy';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        })
+    })
+</script>
 </html>
