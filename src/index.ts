@@ -15,6 +15,7 @@ db.run(`
   CREATE TABLE IF NOT EXISTS links (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     short_code TEXT NOT NULL UNIQUE,
+	manage_code TEXT NOT NULL,
     original_url TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
