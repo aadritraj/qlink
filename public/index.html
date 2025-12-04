@@ -24,6 +24,8 @@
             <a id="short-link-display" target="_blank" rel="noopener noreferrer"></a>
             <button type="button" id="copy-button">Copy</button>
         </div>
+
+        <a id="short-link-manage" href="">Manage it here</a>
     </div>
 
     <p id="error-message"></p>
@@ -35,6 +37,8 @@
     const copyButton = document.getElementById("copy-button");
     const errorMessage = document.getElementById("error-message");
     const shortlinkDisplay = document.getElementById("short-link-display");
+
+    const manageLink = document.getElementById("short-link-manage");
 
     const baseURL = window.location.origin;
 
@@ -63,6 +67,8 @@
             shortlinkDisplay.href = resultantLink;
             shortlinkDisplay.textContent = resultantLink;
             copyButton.dataset.copyText = resultantLink;
+            
+            manageLink.href = `${baseURL}/manage/${result.manage_code}`
 
             feedbackContainer.classList.remove("hidden");
 

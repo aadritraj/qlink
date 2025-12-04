@@ -49,18 +49,21 @@ const app = new Elysia()
 					const { url } = body;
 
 					const shortCode = generateRandomCode();
+					const manageCode = generateRandomCode();
 
 					try {
 						const query = db.prepare(
-							`INSERT INTO links (short_code, original_url) VALUES (?, ?) RETURNING *`,
+							`INSERT INTO links (short_code, manage_code, original_url) VALUES (?, ?, ?) RETURNING *`,
 						);
-						query.run(shortCode, url);
+						query.run(shortCode, manageCode, url);
 
 						return {
-							short_url: `${shortCode}`,
+							short_url: shortCode,
+							manage_code: manageCode,
 						};
-					} catch {
+					} catch (error) {
 						set.status = 500;
+						console.error(error);
 
 						return {
 							error: "Failed to create short link",
