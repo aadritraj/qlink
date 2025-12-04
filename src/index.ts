@@ -1,3 +1,4 @@
+// TODO: make responses { success: bool, message: string }, fix this mess
 import { Elysia, t } from "elysia";
 import { html } from "@elysiajs/html";
 import { swagger } from "@elysiajs/swagger";
@@ -31,6 +32,14 @@ const generateRandomCode = (length = 6): string => {
 	}
 
 	return res;
+};
+
+const extractAuth = (header: string): string => {
+	if (!header || !header.startsWith("Basic ")) {
+		return "";
+	}
+
+	return header.replace("Basic ", "");
 };
 
 const app = new Elysia()
@@ -76,6 +85,68 @@ const app = new Elysia()
 					}),
 				},
 			)
+			.post(
+				"/update-link",
+				async ({ body, headers, set }) => {
+					const manage_code = extractAuth(headers.authorization);
+					const { short_code, new_url } = body;
+
+					try {
+						const checkQuery = db.prepare(`
+							SELECT manage_code
+							FROM links
+							WHERE short_code  = ?;
+						`);
+						const existingLink = checkQuery.get(short_code) as
+							| {
+									manage_code: string;
+							  }
+							| undefined;
+
+						if (!existingLink) {
+							return { message: "Shortcode not found" };
+						}
+
+						if (existingLink.manage_code !== manage_code) {
+							return { message: "Invalid manage code" };
+						}
+
+						const updateQuery = db.prepare(`
+							UPDATE links
+							SET original_url = ?
+							WHERE short_code = ?;	
+						`);
+
+						const info = updateQuery.run(new_url, short_code);
+
+						if (info.changes > 0) {
+							return { success: true, message: "Update successful" };
+						} else {
+							return {
+								success: true,
+								message: "URL was already the provided value.",
+							};
+						}
+					} catch (error) {
+						console.error(error);
+						set.status = 500;
+
+						return {
+							error: "Failed to update shortlink URL",
+						};
+					}
+				},
+				{
+					body: t.Object({
+						short_code: t.String({}),
+						new_url: t.String({ format: "uri" }),
+					}),
+					headers: t.Object({
+						authorization: t.String({}),
+					}),
+				},
+			)
+			// TODO: add authorization (manage_code) validation
 			.delete("/links/:shortCode", ({ params, set }) => {
 				const { shortCode } = params;
 				const query = db.prepare("DELETE FROM links WHERE short_code = ?");
