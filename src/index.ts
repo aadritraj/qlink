@@ -1,4 +1,4 @@
-// TODO: make responses { success: bool, message: string }, fix this mess
+// TODO: make responses { success: bool, message: string }
 import { Elysia, t } from "elysia";
 import { html } from "@elysiajs/html";
 import { swagger } from "@elysiajs/swagger";
@@ -146,19 +146,23 @@ const app = new Elysia()
 					}),
 				},
 			)
-			// TODO: add authorization (manage_code) validation
-			.delete("/links/:shortCode", ({ params, set }) => {
+			.delete("/links/:shortCode", ({ params, headers, set }) => {
+				const manage_code = extractAuth(headers.authorization);
 				const { shortCode } = params;
-				const query = db.prepare("DELETE FROM links WHERE short_code = ?");
-				const result = query.run(shortCode);
+				const query = db.prepare("DELETE FROM links WHERE short_code = ? AND manage_code = ?");
+				const result = query.run(shortCode, manage_code);
 
 				if (result.changes === 0) {
 					set.status = 404;
-					return { error: `Link with code ${shortCode} not found.` };
+					return { success: false, message: `Shortcode doesn't exist or manange code doesn't match` };
 				}
 
 				set.status = 200;
-				return { message: `Link with code ${shortCode} deleted successfully.` };
+				return { success: true, message: `Link with code ${shortCode} deleted successfully` };
+			},{
+				headers: t.Object({
+					authorization: t.String({})
+				})
 			}),
 	)
 
