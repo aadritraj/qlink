@@ -1,4 +1,3 @@
-// TODO: make responses { success: bool, message: string }
 import { Elysia, t } from "elysia";
 import { html } from "@elysiajs/html";
 import { swagger } from "@elysiajs/swagger";
@@ -75,7 +74,8 @@ const app = new Elysia()
 						console.error(error);
 
 						return {
-							error: "Failed to create short link",
+							success: false,
+							message: "Failed to create short link",
 						};
 					}
 				},
@@ -104,11 +104,11 @@ const app = new Elysia()
 							| undefined;
 
 						if (!existingLink) {
-							return { message: "Shortcode not found" };
+							return { success: false, message: "Shortcode not found" };
 						}
 
 						if (existingLink.manage_code !== manage_code) {
-							return { message: "Invalid manage code" };
+							return { success: false, message: "Invalid manage code" };
 						}
 
 						const updateQuery = db.prepare(`
@@ -132,7 +132,8 @@ const app = new Elysia()
 						set.status = 500;
 
 						return {
-							error: "Failed to update shortlink URL",
+							success: false,
+							message: "Failed to update shortlink URL",
 						};
 					}
 				},
@@ -146,24 +147,36 @@ const app = new Elysia()
 					}),
 				},
 			)
-			.delete("/links/:shortCode", ({ params, headers, set }) => {
-				const manage_code = extractAuth(headers.authorization);
-				const { shortCode } = params;
-				const query = db.prepare("DELETE FROM links WHERE short_code = ? AND manage_code = ?");
-				const result = query.run(shortCode, manage_code);
+			.delete(
+				"/links/:shortCode",
+				({ params, headers, set }) => {
+					const manage_code = extractAuth(headers.authorization);
+					const { shortCode } = params;
+					const query = db.prepare(
+						"DELETE FROM links WHERE short_code = ? AND manage_code = ?",
+					);
+					const result = query.run(shortCode, manage_code);
 
-				if (result.changes === 0) {
-					set.status = 404;
-					return { success: false, message: `Shortcode doesn't exist or manange code doesn't match` };
-				}
+					if (result.changes === 0) {
+						set.status = 404;
+						return {
+							success: false,
+							message: `Shortcode doesn't exist or manange code doesn't match`,
+						};
+					}
 
-				set.status = 200;
-				return { success: true, message: `Link with code ${shortCode} deleted successfully` };
-			},{
-				headers: t.Object({
-					authorization: t.String({})
-				})
-			}),
+					set.status = 200;
+					return {
+						success: true,
+						message: `Link with code ${shortCode} deleted successfully`,
+					};
+				},
+				{
+					headers: t.Object({
+						authorization: t.String({}),
+					}),
+				},
+			),
 	)
 
 	.get("/", () => Bun.file("./public/index.html"))
@@ -179,6 +192,7 @@ const app = new Elysia()
 			set.status = 404;
 
 			return {
+				success: false,
 				message: "Link not found",
 			};
 		}
